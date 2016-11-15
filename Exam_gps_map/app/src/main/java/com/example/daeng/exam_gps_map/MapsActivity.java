@@ -30,6 +30,7 @@ import java.util.ArrayList;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     GoogleMap mMap;
+    static LatLng SEOUL = new LatLng( 37.56, 126.97);
     SQLiteDatabase db;
     DB helper;
     ArrayList<LatLng> list = new ArrayList<LatLng>();
@@ -79,13 +80,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         helper = new DB(MapsActivity.this, "Location",null,1);
         db = helper.getWritableDatabase(); // 쓸 수 있는 db를 리턴
 
+
         GPSListener gps = new GPSListener(db, mMap, list);
         initialize();
 
         if(list.size()!=0){
-            mMap.moveCamera(CameraUpdateFactory.newLatLng(list.get(0)));
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(list.get(0),15));
         }else{
-            mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(37.610215, 126.997202)));
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(37.610215, 126.997202),5));
         }
 
         startLocationService();
@@ -181,3 +183,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 }
 
 
+/*
+현재의 위치와 해당 위치에서의 자신이 하는 일 혹은 일어난 사건을 기록
+별도의 메뉴에서 종류별로 통계를 보여줌
+위치정보 및 dataabase필수...
+
+메뉴구성 new, statistics
+통계..? 분류별로 몇개의 게시물이 작성이 되었다. 이 분류에 해당하는 다이어리 내용들이 어떤 위치에서!
+지도: GoogleMap
+목록 : ListView
+ */
