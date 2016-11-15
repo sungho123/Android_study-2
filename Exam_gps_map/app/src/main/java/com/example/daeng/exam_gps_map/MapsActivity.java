@@ -12,6 +12,9 @@ import android.location.LocationManager;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.app.TabActivity;
+import android.os.Bundle;
+import android.widget.TabHost;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdate;
@@ -181,6 +184,31 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
 }
+
+class TVExample extends TabActivity {
+    /** Called when the activity is first created. */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_maps);
+
+        TabHost mTabHost = getTabHost();
+
+        mTabHost.addTab(mTabHost.newTabSpec("tab_test1")
+                .setIndicator("new")
+                .setContent(R.id.view1)
+        );
+        mTabHost.addTab(mTabHost.newTabSpec("tab_test2")
+                .setIndicator("statistics")
+                .setContent(R.id.view2)
+        );
+
+
+        mTabHost.setCurrentTab(0);
+    }
+
+}
+
 
 
 /*
