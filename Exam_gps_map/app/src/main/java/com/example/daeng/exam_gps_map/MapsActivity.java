@@ -1,6 +1,5 @@
 package com.example.daeng.exam_gps_map;
 
-import android.app.Activity;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -11,24 +10,25 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
-import android.util.Log;
-import android.app.TabActivity;
-import android.os.Bundle;
-import android.widget.TabHost;
+import android.support.v7.app.ActionBarActivity;
+import android.view.View;
+import android.widget.BaseAdapter;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.Toast;
 
-import com.google.android.gms.maps.CameraUpdate;
+
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.ArrayList;
+
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -36,15 +36,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     static LatLng SEOUL = new LatLng( 37.56, 126.97);
     SQLiteDatabase db;
     DB helper;
-    ArrayList<LatLng> list = new ArrayList<LatLng>();
+    ArrayList<LatLng> list_latlng = new ArrayList<LatLng>();
+    ArrayList<String> list_str = new ArrayList<String>();
     PolylineOptions polylineOptions;
+
+    EditText schedule = (EditText) findViewById(R.id.editText);
+    Button store = (Button) findViewById(R.id.store);
+    String str;
+    ListView listview = (ListView) findViewById(R.id.listview);
+
 
 
     public void initialize(){
         Cursor rs = db.rawQuery("select * from Location;", null);
         while(rs.moveToNext()){
             mMap.addCircle(new CircleOptions().center(new LatLng(rs.getDouble(0),rs.getDouble(1))).radius(3).strokeColor(Color.RED).fillColor(Color.BLUE));
-            list.add(new LatLng(rs.getDouble(0), rs.getDouble(1)));
+            list_latlng.add(new LatLng(rs.getDouble(0), rs.getDouble(1)));
         }
         drawPolyline();
     }
@@ -53,7 +60,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         polylineOptions = new PolylineOptions();
         polylineOptions.color(Color.RED);
         polylineOptions.width(5);
-        polylineOptions.addAll(list);
+        polylineOptions.addAll(list_latlng);
         mMap.addPolyline(polylineOptions);
     }
 
@@ -65,17 +72,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+        store.setOnClickListener(new View.OnClickListener(){
+            public void onClick(View v){
+                String str = schedule.getText().toString();
+                list_str.add(str); //이걸 한 이유가 없어...
+
+                //db.execSQL( "insert into  Location(x,y,z) values ("+Double.toString(location.latitude)+"," +Double.toString(location.longitude)+ "," + str +");" );
+
+                schedule.setText("");
+            }
+        }); // 저장버튼을 누르면 db에 저장하고 싶었는데...저장을 어떻게 하지?
     }
 
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
+
     @Override
     public void onMapReady(GoogleMap googleMap) {
         // ↑매개변수로 GoogleMap 객체가 넘어옵니다.
@@ -84,11 +94,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         db = helper.getWritableDatabase(); // 쓸 수 있는 db를 리턴
 
 
-        GPSListener gps = new GPSListener(db, mMap, list);
+        GPSListener gps = new GPSListener(db, mMap, list_latlng);
         initialize();
 
-        if(list.size()!=0){
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(list.get(0),15));
+        if(list_latlng.size()!=0){
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(list_latlng.get(0),15));
         }else{
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(37.610215, 126.997202),5));
         }
@@ -99,7 +109,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private void startLocationService() {
         LocationManager manager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
-        GPSListener gpsListener = new GPSListener(db,mMap,list);
+        GPSListener gpsListener = new GPSListener(db,mMap,list_latlng);
         long minTime = 10000;
         float minDistance = 10;
 
@@ -135,9 +145,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             Double latitude = location.getLatitude();
             Double longitude = location.getLongitude();
 
-            db.execSQL( "insert into  Location(x,y) values ("+Double.toString(latitude)+"," +Double.toString(longitude)+");" );
 
-            list.add(new LatLng(latitude,longitude));
+            if(str!=null) {
+                db.execSQL("insert into  Location(x,y,z) values (" + Double.toString(latitude) + "," + Double.toString(longitude) + "," + str + ");"); //이게 위치가 변할 때마다 db에 저장하는건데..
+            }else{
+                db.execSQL("insert into Location(x,y) values ("+ Double.toString(latitude)+","+Double.toString(longitude)+");");
+            }
+
+            list_latlng.add(new LatLng(latitude,longitude));
             drawPolyline();
 
             mMap.addCircle(new CircleOptions().center(new LatLng(latitude, longitude)).radius(3).strokeColor(Color.RED).fillColor(Color.BLUE));
@@ -160,6 +175,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+
     class DB extends SQLiteOpenHelper{
         Context context;
 
@@ -170,54 +186,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         @Override
         public void onCreate(SQLiteDatabase db) {
-            String a = "create table Location(x double,y double);";
+            String a = "create table Location(x double,y double,z String);";
             db.execSQL(a);
             Toast.makeText(context,"DB가 생성되었습니다!! 와아~~", Toast.LENGTH_LONG).show();
         }//table생성
 
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-            String a = "create table Location(x double,y double);";
+            String a = "create table Location(x double,y double, z String);";
             db.execSQL(a);
             Toast.makeText(context,"DB가 업데이트 되었습니다.", Toast.LENGTH_LONG).show();
         }
     }
-
-}
-
-class TVExample extends TabActivity {
-    /** Called when the activity is first created. */
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_maps);
-
-        TabHost mTabHost = getTabHost();
-
-        mTabHost.addTab(mTabHost.newTabSpec("tab_test1")
-                .setIndicator("new")
-                .setContent(R.id.view1)
-        );
-        mTabHost.addTab(mTabHost.newTabSpec("tab_test2")
-                .setIndicator("statistics")
-                .setContent(R.id.view2)
-        );
-
-
-        mTabHost.setCurrentTab(0);
     }
-
-}
-
-
-
-/*
-현재의 위치와 해당 위치에서의 자신이 하는 일 혹은 일어난 사건을 기록
-별도의 메뉴에서 종류별로 통계를 보여줌
-위치정보 및 dataabase필수...
-
-메뉴구성 new, statistics
-통계..? 분류별로 몇개의 게시물이 작성이 되었다. 이 분류에 해당하는 다이어리 내용들이 어떤 위치에서!
-지도: GoogleMap
-목록 : ListView
- */
